@@ -1,4 +1,3 @@
-
 let stripes = [];
 let currentStripe = 0;
 let rangeX;
@@ -7,6 +6,8 @@ let rangeLength;
 let mode = 1;
 let buttonW = 200;
 let buttonH = 48;
+let avoidRadius = 80;
+let avoidForce = 2;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -38,6 +39,7 @@ function draw() {
   }
 
   for (let stripe of stripes) {
+    stripe.avoidMouse(mouseX - width / 2, mouseY - height / 2);
     stripe.update();
     stripe.display();
   }
@@ -71,23 +73,16 @@ function mousePressed() {
     currentStripe = 0;
     loop();
     setup();
+  } else {
+    for (let s of stripes) {
+      s.clearOpacity();
+    }
   }
 }
 
 function keyPressed() {
   if (key === ' ') {
     for (let s of stripes) s.explode();
-  }
-}
-
-function mouseMoved() {
-  for (let s of stripes) {
-    let d = dist(mouseX - width / 2, mouseY - height / 2, s.x, s.y);
-    if (d < 80) {
-      let angle = atan2(s.y - (mouseY - height / 2), s.x - (mouseX - width / 2));
-      s.vx += cos(angle) * 2;
-      s.vy += sin(angle) * 2;
-    }
   }
 }
 
@@ -99,8 +94,6 @@ class LineStripe {
   constructor(x, y, len, spacing, count, angle, baseWeight) {
     this.x = x;
     this.y = y;
-    this.originX = x;
-    this.originY = y;
     this.len = len;
     this.spacing = spacing;
     this.count = count;
@@ -127,8 +120,7 @@ class LineStripe {
     push();
     translate(this.x, this.y);
     rotate(-this.angle);
-    for (let i = 0; i < this.lines.length; i++) {
-      let l = this.lines[i];
+    for (let l of this.lines) {
       stroke(this.gray, l.opacity);
       strokeWeight(l.weight);
       if (l.m === 0) {
@@ -160,8 +152,7 @@ class LineStripe {
     push();
     translate(this.x, this.y);
     rotate(-this.angle);
-    for (let i = 0; i < this.lines.length; i++) {
-      let l = this.lines[i];
+    for (let l of this.lines) {
       stroke(this.gray, l.opacity);
       strokeWeight(l.weight);
       line(0 + l.offsetY, l.offsetY, this.len + l.offsetY, l.offsetY);
@@ -171,7 +162,22 @@ class LineStripe {
 
   explode() {
     let angle = random(TWO_PI);
-    this.vx = cos(angle) * random(8, 14);
-    this.vy = sin(angle) * random(2, 6);
+    this.vx = cos(angle) * random(12, 20);
+    this.vy = sin(angle) * random(5, 10);
+  }
+
+  avoidMouse(mx, my) {
+    let d = dist(mx, my, this.x, this.y);
+    if (d < avoidRadius) {
+      let angle = atan2(this.y - my, this.x - mx);
+      this.vx += cos(angle) * avoidForce;
+      this.vy += sin(angle) * avoidForce;
+    }
+  }
+
+  clearOpacity() {
+    for (let l of this.lines) {
+      l.opacity = 255;
+    }
   }
 }
